@@ -11,6 +11,9 @@ const form = $("authForm");
 let mode = "signin"; // or "signup"
 let busy = false;
 
+// Coming back to the login page ends demo mode.
+try { sessionStorage.removeItem("pg_demo"); } catch {}
+
 // Already signed in? Go straight to the dashboard.
 onAuthStateChanged(auth, (user) => {
   if (user && !busy) location.replace("dashboard.html");

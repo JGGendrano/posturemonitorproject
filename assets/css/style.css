@@ -332,36 +332,42 @@ body.is-loading .about-main, body.is-loading .about-foot { visibility: hidden; }
 
 /* Lineup: hover to reveal */
 .lineup-track { display: flex; gap: 14px; height: clamp(320px, 56vh, 460px); }
-.member-item { flex: 1; min-width: 0; transition: flex .5s ease; }
-.member-item:hover, .member-item:focus-within { flex: 2.6; }
+/* Smooth, even curve (eases in and out) so the hover feels fluid instead of snapping */
+.member-item { flex: 1; min-width: 0; transition: flex .5s cubic-bezier(.4, 0, .2, 1); }
+.member-item:hover, .member-item:has(.member:focus-visible) { flex: 2.6; }
 
 .member {
   position: relative; display: block; width: 100%; height: 100%; padding: 0; overflow: hidden;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--line);
   box-shadow: var(--shadow); cursor: pointer; font: inherit; color: inherit;
-  transition: border-color .3s;
+  transition: border-color .3s ease, box-shadow .4s ease, transform .4s cubic-bezier(.4, 0, .2, 1);
 }
-.member:hover { border-color: var(--accent); }
+.member:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 18px 40px rgba(22, 115, 201, .22); }
+.member:active { transform: translateY(-1px) scale(.985); transition-duration: .12s; }
+.member.is-opening img { opacity: .35; }
 .member:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 
 .member img {
   width: 100%; height: 100%; object-fit: cover; display: block;
-  filter: grayscale(.9) brightness(.95); transform: scale(1.04);
-  transition: filter .5s, transform .5s;
+  filter: grayscale(.9) brightness(.95); transform: scale(1);
+  transition: filter .45s ease, transform .7s cubic-bezier(.25, .1, .25, 1), opacity .2s;
 }
-.member-item:hover .member img, .member-item:focus-within .member img { filter: none; transform: scale(1); }
+/* Hover: color comes back and the photo slowly zooms in */
+.member-item:hover .member img, .member-item:has(.member:focus-visible) .member img { filter: none; transform: scale(1.08); }
 
 .member-tag {
   position: absolute; left: 12px; right: 12px; bottom: 12px; padding: 10px 14px; text-align: left;
   display: flex; flex-direction: column; gap: 2px; overflow: hidden;
   border-radius: 14px; background: rgba(255, 255, 255, .92); color: var(--ink); backdrop-filter: blur(6px);
+  transition: transform .45s cubic-bezier(.4, 0, .2, 1);
 }
+.member-item:hover .member-tag, .member-item:has(.member:focus-visible) .member-tag { transform: translateY(-4px); }
 .member-tag strong { font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .member-tag small {
   font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap;
-  max-height: 0; opacity: 0; transition: max-height .3s, opacity .3s;
+  max-height: 0; opacity: 0; transition: max-height .35s cubic-bezier(.4, 0, .2, 1), opacity .3s ease .05s;
 }
-.member-item:hover .member-tag small, .member-item:focus-within .member-tag small { max-height: 20px; opacity: 1; }
+.member-item:hover .member-tag small, .member-item:has(.member:focus-visible) .member-tag small { max-height: 20px; opacity: 1; }
 
 /* Note (popup) */
 dialog.note {
@@ -369,9 +375,22 @@ dialog.note {
   width: min(560px, 92vw); max-height: 88vh;
 }
 dialog.note::backdrop { background: rgba(15, 25, 20, .55); backdrop-filter: blur(3px); }
-dialog.note[open] { animation: notePop .28s ease; }
-dialog.note[open]::backdrop { animation: fadeIn .28s ease; }
-@keyframes notePop { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+/* Open/close animation is done in aboutus.js: the note grows out of the clicked photo. */
+.photo-ghost {
+  position: fixed; z-index: 5; object-fit: cover; pointer-events: none; margin: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+}
+/* Text inside the note slides in just after the card lands */
+dialog.note.is-entering .note-head > div,
+dialog.note.is-entering .note-body > * { animation: noteRise .4s cubic-bezier(.2, .9, .25, 1) both; }
+dialog.note.is-entering .note-head > div { animation-delay: .14s; }
+dialog.note.is-entering .note-body > *:nth-child(1) { animation-delay: .18s; }
+dialog.note.is-entering .note-body > *:nth-child(2) { animation-delay: .21s; }
+dialog.note.is-entering .note-body > *:nth-child(3) { animation-delay: .24s; }
+dialog.note.is-entering .note-body > *:nth-child(4) { animation-delay: .27s; }
+dialog.note.is-entering .note-body > *:nth-child(n+5) { animation-delay: .3s; }
+@keyframes noteRise { from { opacity: 0; transform: translateY(10px); } }
+dialog.note.is-leaving .note-head > div, dialog.note.is-leaving .note-body { opacity: 0; transition: opacity .12s; }
 
 .note-card {
   position: relative; max-height: 88vh; overflow-y: auto; font-family: inherit;
@@ -411,14 +430,12 @@ dialog.note[open]::backdrop { animation: fadeIn .28s ease; }
 @media (max-width: 640px) {
   .lineup-track { display: grid; grid-template-columns: repeat(2, 1fr); height: auto; }
   .member-item { aspect-ratio: 3 / 4; }
-  .member-item:hover, .member-item:focus-within { flex: initial; }
+  .member-item:hover, .member-item:has(.member:focus-visible) { flex: initial; }
   .note-card { padding: 22px 18px 24px; }
   .note-avatar { width: 68px; height: 68px; }
 }
 @media (hover: none) {
   .member img { filter: none; transform: none; }
+  .member:hover { transform: none; }
   .member-tag small { max-height: 20px; opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .about-page *, dialog.note, dialog.note::backdrop { animation: none !important; transition: none !important; }
 }

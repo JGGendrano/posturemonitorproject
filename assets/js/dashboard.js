@@ -23,7 +23,18 @@ import { startTutorial, DASHBOARD_TOUR } from "./tutorial.js";
 
 const SDK = "https://www.gstatic.com/firebasejs/13.3.0/";
 const params = new URLSearchParams(location.search);
-const isDemo = params.get("demo") === "1";
+// Demo mode lasts for the whole visit: ?demo=1 turns it on, "Exit demo" (or the login page) turns it off.
+const isDemo = (() => {
+  const fromUrl = params.get("demo") === "1";
+  try {
+    if (fromUrl) sessionStorage.setItem("pg_demo", "1");
+    return fromUrl || sessionStorage.getItem("pg_demo") === "1";
+  } catch { return fromUrl; }
+})();
+function exitDemo() {
+  try { sessionStorage.removeItem("pg_demo"); } catch {}
+  location.replace("index.html");
+}
 
 // Device ID comes from the URL (?device=pg-002), default pg-001.
 const deviceId = (params.get("device") || "pg-001").replace(/[^A-Za-z0-9_-]/g, "");
@@ -364,7 +375,7 @@ setInterval(() => {
   } else {
     $("userEmail").textContent = "Demo";
     $("signOutBtn").textContent = "Exit demo";
-    $("signOutBtn").addEventListener("click", () => location.replace("index.html"));
+    $("signOutBtn").addEventListener("click", exitDemo);
   }
   document.body.classList.remove("is-loading");
 
